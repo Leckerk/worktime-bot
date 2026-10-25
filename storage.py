@@ -6,14 +6,16 @@
   pending     — активные "ожидания ответа" (бот ждёт кол-во часов после напоминания)
 """
 
+import os
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "worktime.db"
+DB_PATH = Path(os.environ.get("DB_PATH", str(Path(__file__).parent / "worktime.db")))
 
 
 def _conn() -> sqlite3.Connection:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")

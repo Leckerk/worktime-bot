@@ -1,0 +1,16 @@
+services:
+  bot:
+    build: .
+    image: worktime-bot:latest
+    container_name: worktime-bot
+    restart: unless-stopped          # переживает рестарты сервера и падения (backoff)
+    env_file: .env                   # TELEGRAM_BOT_TOKEN, BOT_TZ — без них бот не стартует
+    volumes:
+      - ./data:/data                 # база SQLite хранится на хосте, переживает пересборку образа
+    environment:
+      - DB_PATH=/data/worktime.db
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"                # ротация логов, чтобы не забить диск VPS

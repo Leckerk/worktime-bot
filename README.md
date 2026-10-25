@@ -75,13 +75,51 @@ python bot.py
   «ожидание ответа», состояние меню
 - `reports.py` — форматирование месячной статистики
 - `test_buttons.py`, `test_flows.py` — тесты (запуск: `python test_buttons.py && python test_flows.py`)
+- `Dockerfile`, `docker-compose.yml`, `deploy.sh` — деплой в Docker на VPS
 
-## Развёртывание на сервере
+## Развёртывание на VPS в Docker (рекомендуется)
 
-Бот должен работать постоянно (polling). Например:
+Проект содержит `Dockerfile`, `docker-compose.yml` и скрипт `deploy.sh`.
+
+**1. Скопировать проект на сервер**, например:
 
 ```bash
-# systemd-юнит или просто:
+scp -r . user@ваш-vps:/opt/worktime-bot     # или git clone в /opt/worktime-bot
+```
+
+(на сервере должен быть установлен Docker: `curl -fsSL https://get.docker.com | sh`)
+
+**2. Первый запуск:**
+
+```bash
+cd /opt/worktime-bot
+./deploy.sh init      # проверит docker, создаст .env и data/
+nano .env             # вписать TELEGRAM_BOT_TOKEN (и при желании BOT_TZ)
+./deploy.sh           # собрать образ и запустить контейнер в фоне
+```
+
+**3. Полезные команды deploy.sh:**
+
+| Команда | Что делает |
+|---|---|
+| `./deploy.sh` / `update` | пересобрать образ и перезапустить (для обновлений кода) |
+| `./deploy.sh logs` | последние логи (`Ctrl+C` — выход) |
+| `./deploy.sh status` | состояние контейнера |
+| `./deploy.sh restart` | перезапуск без пересборки |
+| `./deploy.sh stop` | остановить бота |
+| `./deploy.sh backup` | копия базы в `backups/` (хранятся 30 дней) |
+
+Особенности конфигурации:
+- база SQLite лежит в `./data/worktime.db` на хосте (том `/data` в контейнере) — переживает пересборки образа; путь настраивается переменной `DB_PATH`;
+- `restart: unless-stopped` — бот поднимается сам после падений и рестарта сервера;
+- логи с ротацией (10 МБ × 5 файлов), контейнер работает от непривилегированного пользователя;
+- `.env` не попадает в git и в образ (см. `.gitignore` / `.dockerignore`).
+
+### Вариант без Docker
+
+Бот должен работать постоянно (polling):
+
+```bash
 nohup python bot.py > bot.log 2>&1 &
 ```
 
